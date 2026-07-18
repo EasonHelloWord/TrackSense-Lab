@@ -1,0 +1,2 @@
+.param small { display:block; margin-top:4px; color:#536b7e; font-size:11px; line-height:1.4; }
+.code-input { width:100%; min-height:220px; margin-top:7px; resize:vertical; border:2px solid #102a43; border-radius:0; padding:9px; background:#f7fafb; color:#102a43; font:11px/1.55 "SF Mono",Consolas,monospace; }

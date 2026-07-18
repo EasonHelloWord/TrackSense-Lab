@@ -1,0 +1,2 @@
+import type { SensorValue } from '../controllers/types'; import { binary,hex } from '../utils/formatBinary';
+export function SensorBar({values,disabled}:{values:SensorValue[];disabled:number|null}){return <section className="panel"><h2>八路红外传感器</h2><div className="sensors">{values.map((v,i)=><div key={i} className={`sensor ${disabled===i?'disabled':v?'hit':''}`}><small>S{i+1}</small><strong>{v}</strong></div>)}</div><div className="mono">二进制 {binary(values)}<br/>十六进制 {hex(values)}　触发数量 {values.filter(Boolean).length}</div></section>}
