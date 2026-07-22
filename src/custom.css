@@ -1,4 +1,8 @@
 .param small { display:block; margin-top:4px; color:#536b7e; font-size:11px; line-height:1.4; }
+.inline-number { min-width:38px; border:0; padding:0; background:transparent; color:#17324d; box-shadow:none; font:700 12px "SF Mono",Consolas,monospace; text-align:right; }
+.inline-number:hover { color:#0e8191; transform:none; text-decoration:underline; }
+.inline-number-editor { display:flex; align-items:center; gap:3px; font:11px "SF Mono",Consolas,monospace; }
+.inline-number-editor input { width:66px; border:1px solid #0e8191; padding:2px 4px; background:#fff; color:#102a43; font:700 12px "SF Mono",Consolas,monospace; text-align:right; outline:2px solid rgba(14,129,145,.16); }
 .code-input { width:100%; min-height:220px; margin-top:7px; resize:vertical; border:2px solid #102a43; border-radius:0; padding:9px; background:#f7fafb; color:#102a43; font:11px/1.55 "SF Mono",Consolas,monospace; }
 .algorithm-variable-group { border-top:1px solid #d5e0e5; margin-top:14px; padding-top:10px; }
 .algorithm-variable-group h3 { color:#0e8191; font-size:11px; letter-spacing:.08em; margin:0 0 4px; text-transform:uppercase; }

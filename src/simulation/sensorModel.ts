@@ -16,7 +16,7 @@ export function readSensors(preset: TrackPreset, mapX: number, mapY: number, rot
     const mapSensorY = -sin * x + cos * y - mapY;
     let black = preset === 'finish' && mapSensorY < -270
       ? true
-      : isOnTrack(preset, mapSensorX, mapSensorY, seed);
+      : isOnTrack(preset, mapSensorX, mapSensorY, seed, 27, settings.loopRadius);
     if (settings.sensorNoise > 0 && Math.random() < settings.sensorNoise) black = !black;
     return black ? 1 : 0;
   }) as SensorValue[];

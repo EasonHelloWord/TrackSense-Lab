@@ -17,7 +17,7 @@ export function SimulationCanvas({ engine, revision }: { engine: SimulationEngin
     // 地图层：旋转锚点固定在小车中心；地图位移发生在旋转后的地图局部坐标中。
     ctx.save(); ctx.translate(width / 2, carY); ctx.rotate(state.mapRotation); ctx.translate(state.mapOffsetX, state.mapOffsetY);
     ctx.strokeStyle = '#111b28'; ctx.lineWidth = 54; ctx.lineCap = 'round'; ctx.beginPath();
-    trackPoints(engine.preset, engine.seed).forEach((point, index) => { if (index) ctx.lineTo(point.x, point.y); else ctx.moveTo(point.x, point.y); });
+    trackPoints(engine.preset, engine.seed, engine.settings.loopRadius).forEach((point, index) => { if (index) ctx.lineTo(point.x, point.y); else ctx.moveTo(point.x, point.y); });
     ctx.stroke(); ctx.strokeStyle = '#56d6cf'; ctx.lineWidth = 2; ctx.setLineDash([7, 6]); ctx.lineDashOffset = state.mapOffsetY * .18; ctx.stroke(); ctx.setLineDash([]); ctx.restore();
 
     // 固定前景车身层：从不使用 mapOffset 或 mapRotation。

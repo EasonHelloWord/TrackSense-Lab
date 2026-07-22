@@ -4,7 +4,7 @@ import { readSensors } from './sensorModel';
 import { clamp } from '../utils/clamp';
 
 const emptyResult: ControllerResult = { motorCommand: { leftSpeed: 0, rightSpeed: 0 }, error: null, linePosition: 0, actionLabel: '等待开始', explanation: '点击开始或单步，读取固定传感器下方的地图。', debugValues: {} };
-export const defaultSettings: SimulationSettings = { motorJitter: 0, motorAcceleration: 60, motorDeceleration: 90, leftEfficiency: 1, rightEfficiency: 1, sensorNoise: 0, sensorDelay: 0, disabledSensor: null, sensorSpacing: 15, sensorForwardOffset: 59, motorSpacing: 120 };
+export const defaultSettings: SimulationSettings = { motorJitter: 0, motorAcceleration: 60, motorDeceleration: 90, leftEfficiency: 1, rightEfficiency: 1, sensorNoise: 0, sensorDelay: 0, disabledSensor: null, sensorSpacing: 15, sensorForwardOffset: 59, motorSpacing: 120, loopRadius: 160 };
 
 export class SimulationEngine {
   preset: TrackPreset = 'straight'; seed = 1; settings = { ...defaultSettings }; context: ControllerContext;
