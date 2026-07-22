@@ -118,7 +118,10 @@ function generateCCode(p: Parameters) {
   if (magnitude <= CENTER_THRESHOLD) return 0.0f;
   return error > 0.0f ? (magnitude > HARD_THRESHOLD ? HARD_STRENGTH : SEGMENT_STRENGTH)
                        : -(magnitude > HARD_THRESHOLD ? HARD_STRENGTH : SEGMENT_STRENGTH);` : controlMethod === 'manual' ? `/* 手写控制量算法：返回控制量，正数让左轮更快。 */
-  return User_Correction(error, dt);` : `float derivative = (error - g_previousError) / dt;
+  float output = User_Correction(error, dt);
+  if (output > CORRECTION_LIMIT) output = CORRECTION_LIMIT;
+  if (output < -CORRECTION_LIMIT) output = -CORRECTION_LIMIT;
+  return output;` : `float derivative = (error - g_previousError) / dt;
   ${controlMethod === 'pid' ? 'g_integral += error * dt;\n  if (g_integral > INTEGRAL_LIMIT) g_integral = INTEGRAL_LIMIT;\n  if (g_integral < -INTEGRAL_LIMIT) g_integral = -INTEGRAL_LIMIT;' : 'g_integral = 0.0f;'}
   float output = KP * error${controlMethod === 'pid' ? ' + KI * g_integral' : ''}${controlMethod === 'pd' || controlMethod === 'pid' ? ' + KD * derivative' : ''};
   if (output > CORRECTION_LIMIT) output = CORRECTION_LIMIT;
@@ -134,6 +137,21 @@ function generateCCode(p: Parameters) {
   else Motor_SetSpeed(ClampSpeed(BASE_SPEED));` : motorMethod === 'manual' ? `/* 手写电机分配：在 User_Motor 中调用两个 Motor_Set... 函数。 */
   User_Motor(BASE_SPEED, correction, error);` : `Motor_SetLeftSpeed(ClampSpeed(BASE_SPEED + correction));
   Motor_SetRightSpeed(ClampSpeed(BASE_SPEED - correction));`;
+  const configVariables = [
+    `static const float BASE_SPEED = ${f('baseSpeed')};              /* 基础速度 */`,
+    ...(errorMethod === 'state' ? [`static const float STATE_MATCH_GAIN = ${f('stateMatchGain')};    /* 状态匹配增益 */`] : []),
+    ...(errorMethod === 'edge' ? [`static const float EDGE_OFFSET = ${f('edgeOffset')};             /* 中点校准偏移 */`] : []),
+    `static const float SENSOR_WEIGHT[8] = { ${weights} };            /* S1~S8 权重 */`,
+    ...(controlMethod === 'switch' ? [`static const float SWITCH_STRENGTH = ${f('switchStrength')};     /* 开关控制强度 */`] : []),
+    ...(controlMethod === 'segmented' ? [`static const float CENTER_THRESHOLD = ${f('centerThreshold')};   /* 居中阈值 */`, `static const float SEGMENT_STRENGTH = ${f('segmentStrength')};   /* 轻微偏差修正 */`, `static const float HARD_THRESHOLD = ${f('hardThreshold')};       /* 急转阈值 */`, `static const float HARD_STRENGTH = ${f('hardStrength')};         /* 急转修正 */`] : []),
+    ...(controlMethod === 'p' || controlMethod === 'pd' || controlMethod === 'pid' ? [`static const float KP = ${f('kp')};                              /* Kp */`] : []),
+    ...(controlMethod === 'pd' || controlMethod === 'pid' ? [`static const float KD = ${f('kd')};                              /* Kd */`] : []),
+    ...(controlMethod === 'pid' ? [`static const float KI = ${f('ki')};                              /* Ki */`, `static const float INTEGRAL_LIMIT = ${f('integralLimit')};       /* 最大积分值 */`] : []),
+    ...(controlMethod === 'p' || controlMethod === 'pd' || controlMethod === 'pid' || controlMethod === 'manual' ? [`static const float CORRECTION_LIMIT = ${f('correctionLimit')};   /* 控制量限幅 */`] : []),
+    ...(motorMethod === 'reverse' ? [`static const float REVERSE_TURN_SPEED = ${f('reverseTurnSpeed')};/* 反向转向速度 */`] : []),
+    `static const float LOST_SEARCH_SPEED = ${f('lostLineSearchSpeed')}; /* 丢线搜索速度 */`,
+    `static const uint16_t LOST_TIMEOUT_FRAMES = ${Math.round(number(p, 'lostLineTimeoutFrames'))}; /* 丢线超时帧数 */`,
+  ].join('\n');
   return `#include "stm32f10x.h"
 #include "Motor.h"
 #include "Delay.h"
@@ -141,23 +159,7 @@ function generateCCode(p: Parameters) {
 
 /* Sensor_Read 的 bit0~bit7 对应网页的 S1~S8；1 表示检测到黑线。 */
 /* 当前组合：偏差=${errorMethod}，控制量=${controlMethod}，电机速度=${motorMethod} */
-static const float BASE_SPEED = ${f('baseSpeed')};              /* 网页：基础速度 */
-static const float SWITCH_STRENGTH = ${f('switchStrength')};     /* 网页：开关控制强度 */
-static const float CENTER_THRESHOLD = ${f('centerThreshold')};   /* 网页：居中阈值 */
-static const float SEGMENT_STRENGTH = ${f('segmentStrength')};   /* 网页：轻微偏差修正 */
-static const float HARD_THRESHOLD = ${f('hardThreshold')};       /* 网页：急转阈值 */
-static const float HARD_STRENGTH = ${f('hardStrength')};         /* 网页：急转修正 */
-static const float KP = ${f('kp')};                              /* 网页：Kp */
-static const float KI = ${f('ki')};                              /* 网页：Ki */
-static const float KD = ${f('kd')};                              /* 网页：Kd */
-static const float INTEGRAL_LIMIT = ${f('integralLimit')};       /* 网页：最大积分值 */
-static const float CORRECTION_LIMIT = ${f('correctionLimit')};   /* 网页：控制量限幅 */
-static const float STATE_MATCH_GAIN = ${f('stateMatchGain')};    /* 网页：状态匹配增益 */
-static const float EDGE_OFFSET = ${f('edgeOffset')};             /* 网页：中点校准偏移 */
-static const float REVERSE_TURN_SPEED = ${f('reverseTurnSpeed')};/* 网页：反向转向速度 */
-static const float LOST_SEARCH_SPEED = ${f('lostLineSearchSpeed')}; /* 网页：丢线搜索速度 */
-static const uint16_t LOST_TIMEOUT_FRAMES = ${Math.round(number(p, 'lostLineTimeoutFrames'))}; /* 网页：丢线超时帧数 */
-static const float SENSOR_WEIGHT[8] = { ${weights} };            /* 网页：S1~S8 权重 */
+${configVariables}
 
 static float g_previousError = 0.0f, g_integral = 0.0f;
 static int8_t g_lastDirection = 1;
@@ -183,7 +185,7 @@ ${errorMethod === 'manual' ? `static float User_Error(uint8_t sensor) {
 ` : ''}${controlMethod === 'manual' ? `static float User_Correction(float error, float dt) {
   (void)dt;
   /* TODO: 填入你的控制量算法。 */
-  return error * KP;
+  return error * 18.0f;
 }
 ` : ''}${motorMethod === 'manual' ? `static void User_Motor(float baseSpeed, float correction, float error) {
   (void)error;
