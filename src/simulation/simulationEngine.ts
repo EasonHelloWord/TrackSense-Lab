@@ -4,7 +4,7 @@ import { readSensors } from './sensorModel';
 import { clamp } from '../utils/clamp';
 
 const emptyResult: ControllerResult = { motorCommand: { leftSpeed: 0, rightSpeed: 0 }, error: null, linePosition: 0, actionLabel: '等待开始', explanation: '点击开始或单步，读取固定传感器下方的地图。', debugValues: {} };
-export const defaultSettings: SimulationSettings = { motorJitter: 0, leftEfficiency: 1, rightEfficiency: 1, sensorNoise: 0, sensorDelay: 0, disabledSensor: null };
+export const defaultSettings: SimulationSettings = { motorJitter: 0, motorResponseTime: .18, leftEfficiency: 1, rightEfficiency: 1, sensorNoise: 0, sensorDelay: 0, disabledSensor: null, sensorSpacing: 15, sensorForwardOffset: 59, motorSpacing: 120 };
 
 export class SimulationEngine {
   preset: TrackPreset = 'straight'; seed = 1; settings = { ...defaultSettings }; context: ControllerContext;
@@ -44,8 +44,12 @@ export class SimulationEngine {
       debugValues: { ...output.result.debugValues, '手动介入': this.manualOverride.label },
     } : output.result;
     const jitter = () => this.settings.motorJitter ? (Math.random() - .5) * this.settings.motorJitter : 0;
-    const left = clamp(result.motorCommand.leftSpeed * this.settings.leftEfficiency + jitter(), -100, 100);
-    const right = clamp(result.motorCommand.rightSpeed * this.settings.rightEfficiency + jitter(), -100, 100);
+    const targetLeft = clamp(result.motorCommand.leftSpeed * this.settings.leftEfficiency + jitter(), -100, 100);
+    const targetRight = clamp(result.motorCommand.rightSpeed * this.settings.rightEfficiency + jitter(), -100, 100);
+    // 一阶电机响应：实际轮速连续地趋近有效目标轮速，避免指令切换时瞬间跳变。
+    const response = 1 - Math.exp(-dt / Math.max(this.settings.motorResponseTime, .001));
+    const left = s.actualLeft + (targetLeft - s.actualLeft) * response;
+    const right = s.actualRight + (targetRight - s.actualRight) * response;
     const average = (left + right) / 2;
     const distance = average * .11;
     /*
@@ -58,7 +62,8 @@ export class SimulationEngine {
     const moveY = Math.cos(angle) * distance;
     // 循环角度 [0, 2π)：满 360° 回到 0°，反向转过 0° 则从 360° 继续。
     const fullTurn = Math.PI * 2;
-    const nextRotation = ((angle + (right - left) * .0009) % fullTurn + fullTurn) % fullTurn;
+    // 差速运动学：轮距越小，同一轮速差造成的角速度越大。
+    const nextRotation = ((angle + (right - left) * .11 / this.settings.motorSpacing) % fullTurn + fullTurn) % fullTurn;
     // 唯一的地图运动规则：平均轮速平移，速度差绕固定车心旋转。车身层从不移动。
     this.state = { ...s, frame: s.frame + 1, time: s.time + dt, mapOffsetX: s.mapOffsetX + moveX, mapOffsetY: s.mapOffsetY + moveY, mapRotation: nextRotation, lateral: s.mapOffsetX + moveX, sensorValues: sensors, result, targetLeft: result.motorCommand.leftSpeed, targetRight: result.motorCommand.rightSpeed, actualLeft: left, actualRight: right };
     return this.state;

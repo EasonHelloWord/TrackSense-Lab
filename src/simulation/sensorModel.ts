@@ -1,9 +1,7 @@
 import type { SensorValue } from '../controllers/types';
 import { trackX } from './trackGenerator';
 import type { SimulationSettings, TrackPreset } from './types';
-
-const SENSOR_X = [-52.5, -37.5, -22.5, -7.5, 7.5, 22.5, 37.5, 52.5];
-const SENSOR_Y = -59;
+import { sensorPositions } from './vehicleGeometry';
 
 /**
  * 传感器固定在前景车身层。将固定点反变换到地图平面，再查询黑线。
@@ -11,11 +9,11 @@ const SENSOR_Y = -59;
  */
 export function readSensors(preset: TrackPreset, mapX: number, mapY: number, rotation: number, settings: SimulationSettings, seed: number): [SensorValue,SensorValue,SensorValue,SensorValue,SensorValue,SensorValue,SensorValue,SensorValue] {
   const cos = Math.cos(rotation), sin = Math.sin(rotation);
-  const values = SENSOR_X.map((x, i) => {
+  const values = sensorPositions(settings).map(({ x, y }, i) => {
     if (settings.disabledSensor === i) return 0;
     // 地图先绕固定车心旋转，再在地图局部坐标平移：localMap = R(-rotation)×sensorPoint - mapOffset。
-    const mapSensorX = cos * x + sin * SENSOR_Y - mapX;
-    const mapSensorY = -sin * x + cos * SENSOR_Y - mapY;
+    const mapSensorX = cos * x + sin * y - mapX;
+    const mapSensorY = -sin * x + cos * y - mapY;
     let black = preset === 'finish' && mapSensorY < -270
       ? true
       : Math.abs(trackX(preset, mapSensorY, seed) - mapSensorX) < 27;
