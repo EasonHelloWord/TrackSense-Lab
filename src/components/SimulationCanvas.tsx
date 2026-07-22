@@ -24,22 +24,16 @@ export function SimulationCanvas({ engine, revision }: { engine: SimulationEngin
     const geometry = engine.settings, sensorY = -geometry.sensorForwardOffset, sensorWidth = sensorArrayWidth(geometry);
     const bodyWidth = Math.max(92, geometry.motorSpacing - 18), wheelX = geometry.motorSpacing / 2;
     ctx.save(); ctx.translate(width / 2, carY);
-    // 轮胎在车身下方，驱动轮轴即车体局部坐标原点。
-    ctx.fillStyle = '#071b2d'; ctx.beginPath(); ctx.roundRect(-wheelX - 8, -31, 16, 62, 5); ctx.roundRect(wheelX - 8, -31, 16, 62, 5); ctx.fill();
-    // 俯视车身：尖头、驾驶舱和后部保险杠，让传感器横梁保持在车头前方。
-    ctx.fillStyle = '#163b59'; ctx.strokeStyle = '#071b2d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -58); ctx.lineTo(-bodyWidth * .34, -42); ctx.lineTo(-bodyWidth * .45, 22); ctx.lineTo(-bodyWidth * .25, 41); ctx.lineTo(bodyWidth * .25, 41); ctx.lineTo(bodyWidth * .45, 22); ctx.lineTo(bodyWidth * .34, -42); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#2b6887'; ctx.beginPath(); ctx.moveTo(0, -43); ctx.lineTo(-bodyWidth * .23, -28); ctx.lineTo(-bodyWidth * .19, 7); ctx.lineTo(bodyWidth * .19, 7); ctx.lineTo(bodyWidth * .23, -28); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#56d6cf'; ctx.fillRect(-bodyWidth * .19, 24, bodyWidth * .38, 6);
-    // 前置红外横梁与八个实际采样位置。
-    ctx.fillStyle = '#56d6cf'; ctx.fillRect(-sensorWidth / 2 - 10, sensorY - 5, sensorWidth + 20, 10);
-    sensorPositions(geometry).forEach(({ x, y }, i) => { ctx.beginPath(); ctx.fillStyle = engine.settings.disabledSensor === i ? '#f2b35d' : state.sensorValues[i] ? '#46ded0' : '#90a4ae'; ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); });
-    ctx.strokeStyle = '#f2b35d'; ctx.fillStyle = '#17324d'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(-geometry.motorSpacing / 2, 47); ctx.lineTo(geometry.motorSpacing / 2, 47); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(bodyWidth / 2 + 12, sensorY); ctx.lineTo(bodyWidth / 2 + 12, 0); ctx.stroke(); ctx.setLineDash([]);
-    const firstSensor = -sensorWidth / 2, secondSensor = firstSensor + geometry.sensorSpacing;
-    ctx.beginPath(); ctx.moveTo(firstSensor, sensorY - 15); ctx.lineTo(secondSensor, sensorY - 15); ctx.stroke(); ctx.setLineDash([]);
-    ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.fillText(`轮距 ${geometry.motorSpacing}px`, 0, 59); ctx.fillText(`间距 ${geometry.sensorSpacing}px`, (firstSensor + secondSensor) / 2, sensorY - 20); ctx.save(); ctx.translate(bodyWidth / 2 + 24, sensorY / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`前伸 ${geometry.sensorForwardOffset}px`, 0, 0); ctx.restore();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(0, -68); ctx.lineTo(-8, -56); ctx.lineTo(8, -56); ctx.fill(); ctx.restore();
+    // 采用教学示意图的极简平面风格：车体、车轮、传感器梁使用清晰的基础几何形状。
+    const bodyHeight = 90, bodyTop = -45, wheelHeight = 76, wheelWidth = 11;
+    ctx.fillStyle = '#204766'; ctx.fillRect(-bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+    ctx.fillStyle = '#071b2d'; ctx.fillRect(-wheelX - wheelWidth / 2, -wheelHeight / 2, wheelWidth, wheelHeight); ctx.fillRect(wheelX - wheelWidth / 2, -wheelHeight / 2, wheelWidth, wheelHeight);
+    // 传感器梁略低于探头，形成和参考图一致的“圆点浮在横梁上”的读数关系。
+    ctx.fillStyle = '#56d6cf'; ctx.fillRect(-sensorWidth / 2 - 10, sensorY + 5, sensorWidth + 20, 10);
+    sensorPositions(geometry).forEach(({ x, y }, i) => {
+      ctx.beginPath(); ctx.fillStyle = engine.settings.disabledSensor === i ? '#f2b35d' : state.sensorValues[i] ? '#46ded0' : '#90a4ae'; ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
     ctx.fillStyle = '#17324d'; ctx.font = '12px monospace'; ctx.fillText('固定车身层 · 可移动赛道地图层', 14, 22);
   }, [engine, revision]);
   return <canvas className="simulation-canvas" ref={ref} />;
