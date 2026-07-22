@@ -226,7 +226,14 @@ void LineFollow_Update(void) {
   else if (error > 0.0f) g_lastDirection = 1;
 }
 
-/* 在模板工程现有的 while(1) 中调用：LineFollow_Update(); Delay_ms(40); */`;
+int main(void) {
+  Motor_Init();
+  Sensor_Init();
+  while (1) {
+    LineFollow_Update();
+    Delay_ms(40);  /* 控制周期：40 ms */
+  }
+}`;
 }
 
 export const pipelineController: LineController = {

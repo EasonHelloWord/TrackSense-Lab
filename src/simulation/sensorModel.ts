@@ -1,5 +1,5 @@
 import type { SensorValue } from '../controllers/types';
-import { trackX } from './trackGenerator';
+import { isOnTrack } from './trackGenerator';
 import type { SimulationSettings, TrackPreset } from './types';
 import { sensorPositions } from './vehicleGeometry';
 
@@ -16,7 +16,7 @@ export function readSensors(preset: TrackPreset, mapX: number, mapY: number, rot
     const mapSensorY = -sin * x + cos * y - mapY;
     let black = preset === 'finish' && mapSensorY < -270
       ? true
-      : Math.abs(trackX(preset, mapSensorY, seed) - mapSensorX) < 27;
+      : isOnTrack(preset, mapSensorX, mapSensorY, seed);
     if (settings.sensorNoise > 0 && Math.random() < settings.sensorNoise) black = !black;
     return black ? 1 : 0;
   }) as SensorValue[];

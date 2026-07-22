@@ -4,7 +4,7 @@ import { readSensors } from './sensorModel';
 import { clamp } from '../utils/clamp';
 
 const emptyResult: ControllerResult = { motorCommand: { leftSpeed: 0, rightSpeed: 0 }, error: null, linePosition: 0, actionLabel: '等待开始', explanation: '点击开始或单步，读取固定传感器下方的地图。', debugValues: {} };
-export const defaultSettings: SimulationSettings = { motorJitter: 0, motorResponseTime: .18, leftEfficiency: 1, rightEfficiency: 1, sensorNoise: 0, sensorDelay: 0, disabledSensor: null, sensorSpacing: 15, sensorForwardOffset: 59, motorSpacing: 120 };
+export const defaultSettings: SimulationSettings = { motorJitter: 0, motorAcceleration: 120, motorDeceleration: 180, leftEfficiency: 1, rightEfficiency: 1, sensorNoise: 0, sensorDelay: 0, disabledSensor: null, sensorSpacing: 15, sensorForwardOffset: 59, motorSpacing: 120 };
 
 export class SimulationEngine {
   preset: TrackPreset = 'straight'; seed = 1; settings = { ...defaultSettings }; context: ControllerContext;
@@ -46,10 +46,17 @@ export class SimulationEngine {
     const jitter = () => this.settings.motorJitter ? (Math.random() - .5) * this.settings.motorJitter : 0;
     const targetLeft = clamp(result.motorCommand.leftSpeed * this.settings.leftEfficiency + jitter(), -100, 100);
     const targetRight = clamp(result.motorCommand.rightSpeed * this.settings.rightEfficiency + jitter(), -100, 100);
-    // 一阶电机响应：实际轮速连续地趋近有效目标轮速，避免指令切换时瞬间跳变。
-    const response = 1 - Math.exp(-dt / Math.max(this.settings.motorResponseTime, .001));
-    const left = s.actualLeft + (targetLeft - s.actualLeft) * response;
-    const right = s.actualRight + (targetRight - s.actualRight) * response;
+    // 加速度限幅：提速与刹车分别受限；反转时必须先减至 0，再向反方向加速。
+    const approachSpeed = (actual: number, target: number) => {
+      if (actual !== 0 && target !== 0 && Math.sign(actual) !== Math.sign(target)) {
+        const reduction = Math.min(Math.abs(actual), this.settings.motorDeceleration * dt);
+        return actual - Math.sign(actual) * reduction;
+      }
+      const rate = Math.abs(target) > Math.abs(actual) ? this.settings.motorAcceleration : this.settings.motorDeceleration;
+      return actual + clamp(target - actual, -rate * dt, rate * dt);
+    };
+    const left = approachSpeed(s.actualLeft, targetLeft);
+    const right = approachSpeed(s.actualRight, targetRight);
     const average = (left + right) / 2;
     const distance = average * .11;
     /*

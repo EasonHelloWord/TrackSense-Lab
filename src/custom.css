@@ -4,3 +4,12 @@
 .algorithm-variable-group h3 { color:#0e8191; font-size:11px; letter-spacing:.08em; margin:0 0 4px; text-transform:uppercase; }
 .algorithm-selectors label { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; }
 .algorithm-selectors select { padding:6px; }
+.copy-code { margin-left:auto; }
+.weight-editor { margin:8px 0 14px; }
+.weight-editor p { margin:0 0 8px; color:#536b7e; font-size:11px; }
+.weight-editor small { display:block; margin-top:7px; color:#536b7e; font-size:10px; line-height:1.45; }
+.weight-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.weight-cell { min-width:0; border:2px solid #718096; background:#d9e3e9; padding:5px 3px; text-align:center; }
+.weight-cell strong { display:block; color:#17324d; font-size:10px; font-weight:700; }
+.weight-cell input { width:100%; min-width:0; border:0; border-top:1px solid #8ca1b1; margin-top:4px; padding:3px 0 0; background:transparent; color:#102a43; font:700 14px "SF Mono",Consolas,monospace; text-align:center; outline:none; }
+.weight-cell:focus-within { border-color:#0e8191; background:#bde3e5; }
