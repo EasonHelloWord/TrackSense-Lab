@@ -5,6 +5,11 @@
 .algorithm-selectors label { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; }
 .algorithm-selectors select { padding:6px; }
 .copy-code { margin-left:auto; }
+.transport-bar { display:flex; align-items:center; gap:8px; width:max-content; padding:8px 10px; border:2px solid #56d6cf; background:#102f4a; }
+.transport-bar.is-floating { position:fixed; top:8px; right:16px; z-index:30; border-color:#071b2d; background:#fafdff; box-shadow:3px 3px 0 #56d6cf; }
+.transport-bar span { color:#add6df; font:700 10px "Noto Sans SC","PingFang SC",sans-serif; letter-spacing:.08em; }
+.transport-bar.is-floating span { color:#17324d; }
+.transport-bar button { padding:6px 10px; }
 .weight-editor { margin:8px 0 14px; }
 .weight-editor p { margin:0 0 8px; color:#536b7e; font-size:11px; }
 .weight-editor small { display:block; margin-top:7px; color:#536b7e; font-size:10px; line-height:1.45; }
@@ -13,3 +18,24 @@
 .weight-cell strong { display:block; color:#17324d; font-size:10px; font-weight:700; }
 .weight-cell input { width:100%; min-width:0; border:0; border-top:1px solid #8ca1b1; margin-top:4px; padding:3px 0 0; background:transparent; color:#102a43; font:700 14px "SF Mono",Consolas,monospace; text-align:center; outline:none; }
 .weight-cell:focus-within { border-color:#0e8191; background:#bde3e5; }
+.telemetry { margin-top:16px; }
+.telemetry-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.telemetry-title h2 { margin:0; }
+.telemetry-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.telemetry-item { position:relative; border:2px solid #718096; background:#f7fafb; padding:8px; }
+.telemetry-item input { width:100%; border:0; background:transparent; color:#17324d; font:700 11px "Noto Sans SC","PingFang SC",sans-serif; outline:none; }
+.telemetry-item output { display:block; margin:5px 0; color:#0e8191; font:900 22px "SF Mono",Consolas,monospace; font-variant-numeric:tabular-nums; }
+.telemetry-item .formula-input { border-top:1px solid #b3c3cd; padding-top:5px; color:#536b7e; font:10px "SF Mono",Consolas,monospace; }
+.remove-formula { position:absolute; top:4px; right:4px; border:0; box-shadow:none; padding:0 3px; color:#718096; font-size:14px; line-height:1; }
+.telemetry details { margin-top:10px; border-top:1px solid #d5e0e5; padding-top:8px; color:#536b7e; font-size:11px; }
+.telemetry summary { cursor:pointer; color:#17324d; font-weight:700; }
+.telemetry details p { margin:6px 0 0; }
+.variable-table-wrap { max-height:250px; margin-top:8px; overflow:auto; border:1px solid #9eb2bf; }
+.variable-table,.formula-example-table { margin-top:8px; font-size:10px; }
+.variable-table { width:100%; margin:0; table-layout:fixed; }
+.variable-table th:nth-child(1){width:31%}.variable-table th:nth-child(2){width:32%}.variable-table th:nth-child(3){width:37%}
+.variable-table th,.variable-table td { padding:5px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.variable-table code,.formula-example-table code { font-size:10px; }
+.variable-table td:last-child { font-family:"SF Mono",Consolas,monospace; text-align:right; }
+@media(max-width:720px){.telemetry-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.transport-bar{width:100%; margin-top:8px; justify-content:flex-end}.transport-bar span{margin-right:auto}.transport-bar.is-floating{top:4px;right:4px;width:calc(100% - 8px)}}
