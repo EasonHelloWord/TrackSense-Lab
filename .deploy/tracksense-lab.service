@@ -1,0 +1,17 @@
+[Unit]
+Description=TrackSense Lab Vite preview service
+After=network.target
+
+[Service]
+Type=simple
+User=easonjan
+Group=easonjan
+WorkingDirectory=/opt/tools/TrackSense-Lab
+Environment=NODE_ENV=production
+Environment=PATH=/opt/tools/TrackSense-Lab/.node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/tools/TrackSense-Lab/.node/bin/npm run preview -- --host 127.0.0.1 --port 4173 --strictPort
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

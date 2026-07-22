@@ -1,0 +1,92 @@
+  server {
+      listen 80;
+      server_name tools.easonjan.top;
+      return 301 https://tools.easonjan.top$request_uri;
+  }
+
+  server {
+      listen 443 ssl http2;
+      server_name tools.easonjan.top;
+
+      ssl_certificate     /etc/nginx/ssl/tools/tools.easonjan.top_bundle.pem;
+      ssl_certificate_key /etc/nginx/ssl/tools/tools.easonjan.top.key;
+
+      client_max_body_size 20m;
+
+      location = /TrackSense-Lab {
+          return 301 /TrackSense-Lab/;
+      }
+
+      location /TrackSense-Lab/ {
+          proxy_pass http://127.0.0.1:4173;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https;
+      }
+
+      location = /invoice {
+          return 301 /invoice/;
+      }
+
+      location /invoice/api/ {
+          proxy_pass http://127.0.0.1:8000/api/;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https;
+      }
+
+      location /invoice/ {
+          alias /opt/tools/Invoice-QR-Manager/frontend/dist/;
+          try_files $uri $uri/ /invoice/index.html;
+      }
+
+      location = /xinjin {
+          return 301 /xinjin/;
+      }
+
+      location = /xinjin/index.html {
+          alias /opt/tools/xinjin/front-end/dist/index.html;
+      }
+
+      location /xinjin/api/ {
+          proxy_pass http://127.0.0.1:8787/api/;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https;
+      }
+
+      location /xinjin/oauth/ {
+          proxy_pass https://auth.easonjan.top/oauth/;
+          proxy_http_version 1.1;
+          proxy_ssl_server_name on;
+
+          proxy_set_header Host auth.easonjan.top;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https;
+      }
+
+
+      location /xinjin/ws {
+          proxy_pass http://127.0.0.1:8787/;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto https;
+          proxy_read_timeout 3600s;
+      }
+
+      location /xinjin/ {
+          alias /opt/tools/xinjin/front-end/dist/;
+          try_files $uri $uri/ /xinjin/index.html;
+      }
+  }
