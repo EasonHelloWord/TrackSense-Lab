@@ -1,2 +1,6 @@
 .param small { display:block; margin-top:4px; color:#536b7e; font-size:11px; line-height:1.4; }
 .code-input { width:100%; min-height:220px; margin-top:7px; resize:vertical; border:2px solid #102a43; border-radius:0; padding:9px; background:#f7fafb; color:#102a43; font:11px/1.55 "SF Mono",Consolas,monospace; }
+.algorithm-variable-group { border-top:1px solid #d5e0e5; margin-top:14px; padding-top:10px; }
+.algorithm-variable-group h3 { color:#0e8191; font-size:11px; letter-spacing:.08em; margin:0 0 4px; text-transform:uppercase; }
+.algorithm-selectors label { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; }
+.algorithm-selectors select { padding:6px; }
