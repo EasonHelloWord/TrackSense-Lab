@@ -165,68 +165,90 @@ static float g_previousError = 0.0f, g_integral = 0.0f;
 static int8_t g_lastDirection = 1;
 static uint16_t g_lostFrames = 0;
 
+/* 将浮点速度限制到电机驱动允许的 -100~100 区间，并转换为 int8_t。 */
 static int8_t ClampSpeed(float speed) {
+  /* 防止控制量过大，导致传给电机驱动的速度超出有效范围。 */
   if (speed > 100.0f) return 100;
   if (speed < -100.0f) return -100;
   return (int8_t)speed;
 }
 
+/* 根据当前检测到黑线的传感器，计算其权重的平均值作为偏差。 */
 static float WeightedError(uint8_t sensor) {
   float sum = 0.0f; uint8_t count = 0;
+  /* 逐位检查 S1~S8：被触发的传感器才参与加权求和。 */
   for (uint8_t i = 0; i < 8; ++i) if (sensor & (1U << i)) { sum += SENSOR_WEIGHT[i]; ++count; }
+  /* 没有传感器命中时返回 0；实际丢线由 CalculateError 的 valid 标志处理。 */
   return count ? sum / count : 0.0f;
 }
 
-${errorMethod === 'manual' ? `static float User_Error(uint8_t sensor) {
+${errorMethod === 'manual' ? `/* 用户自定义偏差算法：读取传感器位图并返回黑线相对中心的偏差。 */
+static float User_Error(uint8_t sensor) {
   (void)sensor;
-  /* TODO: 填入你的偏差计算，正数偏右、负数偏左。 */
+  /* 用户自定义偏差计算：正数表示黑线在右侧，负数表示黑线在左侧。 */
   return WeightedError(sensor);
 }
-` : ''}${controlMethod === 'manual' ? `static float User_Correction(float error, float dt) {
+` : ''}${controlMethod === 'manual' ? `/* 用户自定义控制量算法：根据偏差和控制周期，返回轮速修正量。 */
+static float User_Correction(float error, float dt) {
   (void)dt;
-  /* TODO: 填入你的控制量算法。 */
+  /* TODO: 填入你的控制量算法；正数让左轮更快、右轮更慢。 */
   return error * 18.0f;
 }
-` : ''}${motorMethod === 'manual' ? `static void User_Motor(float baseSpeed, float correction, float error) {
+` : ''}${motorMethod === 'manual' ? `/* 用户自定义电机分配：将基础速度与控制量转换为左右轮速度。 */
+static void User_Motor(float baseSpeed, float correction, float error) {
   (void)error;
   /* TODO: 填入你的电机速度分配。 */
   Motor_SetLeftSpeed(ClampSpeed(baseSpeed + correction));
   Motor_SetRightSpeed(ClampSpeed(baseSpeed - correction));
 }
-` : ''}static float CalculateError(uint8_t sensor, uint8_t *valid) {
+` : ''}/* 根据当前选择的偏差算法计算 error，并通过 valid 告知是否仍检测到黑线。 */
+static float CalculateError(uint8_t sensor, uint8_t *valid) {
+  /* 8 路均未检测到黑线，交给主循环执行丢线搜索。 */
   if (sensor == 0x00U) { *valid = 0U; return 0.0f; }
   *valid = 1U;
   ${errorBody}
 }
 
+/* 根据当前选择的控制量算法，把偏差转换为轮速修正量 correction。 */
 static float CalculateCorrection(float error, float dt) {
+  /* dt 为控制周期，用于积分和微分计算。 */
   ${controlBody}
 }
 
+/* 根据当前选择的电机速度算法，向左右电机写入最终速度。 */
 static void ApplyMotorSpeed(float correction, float error) {
   ${motorBody}
 }
 
+/* 巡线控制的一次更新：读取传感器、计算偏差与控制量，再输出电机速度。 */
 void LineFollow_Update(void) {
   const float dt = 0.040f;
+  /* 读取八路红外传感器的位图，bit0~bit7 对应 S1~S8。 */
   uint8_t valid, sensor = Sensor_Read();
+  /* 全部传感器均为黑线时，视作终点/十字区域，立即停车并清空控制状态。 */
   if (sensor == 0xFFU) { Motor_Stop(); g_integral = 0.0f; g_lostFrames = 0U; return; }
   float error = CalculateError(sensor, &valid);
   if (!valid) {
+    /* 连续丢线过久说明无法恢复，停车保护。 */
     if (++g_lostFrames > LOST_TIMEOUT_FRAMES) { Motor_Stop(); return; }
+    /* 在最后一次看到黑线的方向上原地搜索，尝试重新压回赛道。 */
     if (g_lastDirection < 0) { Motor_SetLeftSpeed(ClampSpeed(-LOST_SEARCH_SPEED)); Motor_SetRightSpeed(ClampSpeed(LOST_SEARCH_SPEED)); }
     else { Motor_SetLeftSpeed(ClampSpeed(LOST_SEARCH_SPEED)); Motor_SetRightSpeed(ClampSpeed(-LOST_SEARCH_SPEED)); }
     return;
   }
+  /* 已重新检测到黑线，清除丢线计数并恢复闭环控制。 */
   g_lostFrames = 0U;
   float correction = CalculateCorrection(error, dt);
   ApplyMotorSpeed(correction, error);
+  /* 保存本次偏差，供下一帧的 D 项和丢线搜索方向使用。 */
   g_previousError = error;
   if (error < 0.0f) g_lastDirection = -1;
   else if (error > 0.0f) g_lastDirection = 1;
 }
 
+/* 程序入口：初始化外设，然后以固定控制周期持续执行巡线。 */
 int main(void) {
+  /* 模板工程中已实现电机与传感器的硬件初始化。 */
   Motor_Init();
   Sensor_Init();
   while (1) {
