@@ -9,7 +9,7 @@ const directions: Direction[] = [
   { label: '后退', left: -42, right: -42, className: 'backward' },
 ];
 
-/** 按住时覆盖电机指令，松开后停止；不会更改当前选择的巡线算法。 */
+/** 按住时直接接管电机，松开后暂停；不会更改当前选择的巡线算法。 */
 export function ManualInterventionPanel({ engine, onStart, onRelease }: { engine: SimulationEngine; onStart: () => void; onRelease: () => void }) {
   const engage = (event: PointerEvent<HTMLButtonElement>, direction: Direction) => {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -17,5 +17,6 @@ export function ManualInterventionPanel({ engine, onStart, onRelease }: { engine
     onStart();
   };
   const release = () => { engine.clearManualOverride(); onRelease(); };
-  return <section className="panel intervention"><h2>手动介入</h2><p>跑偏时按住方向键接管电机；松开后停止。</p><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>{directions.map(direction => <button key={direction.label} style={direction.label==='前进'||direction.label==='后退'?{gridColumn:'1 / -1'}:undefined} onPointerDown={event => engage(event, direction)} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>{direction.label}</button>)}</div><button style={{marginTop:10,width:'100%'}} onClick={release}>停止手动介入</button></section>;
+  const continueFollowing = () => { engine.clearManualOverride(); onStart(); };
+  return <section className="panel intervention"><h2>手动介入</h2><p>跑偏时按住方向键直接接管电机；松开后暂停。点击“继续巡线”恢复当前算法。</p><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>{directions.map(direction => <button key={direction.label} style={direction.label==='前进'||direction.label==='后退'?{gridColumn:'1 / -1'}:undefined} onPointerDown={event => engage(event, direction)} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>{direction.label}</button>)}</div><button className="primary" style={{marginTop:10,width:'100%'}} onClick={continueFollowing}>继续巡线</button></section>;
 }

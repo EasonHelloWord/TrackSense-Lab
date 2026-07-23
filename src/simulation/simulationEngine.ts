@@ -40,12 +40,14 @@ export class SimulationEngine {
       ...output.result,
       motorCommand: this.manualOverride.command,
       actionLabel: `手动介入：${this.manualOverride.label}`,
-      explanation: '手动介入暂时覆盖控制算法的电机指令；松开按钮后恢复原算法。',
+      explanation: '手动介入直接覆盖电机命令，不受仿真器动力学影响；松开后暂停，可点击继续巡线恢复算法。',
       debugValues: { ...output.result.debugValues, '手动介入': this.manualOverride.label },
     } : output.result;
+    const manualCommand = this.manualOverride?.command;
     const jitter = () => this.settings.motorJitter ? (Math.random() - .5) * this.settings.motorJitter : 0;
-    const targetLeft = clamp(result.motorCommand.leftSpeed * this.settings.leftEfficiency + jitter(), -100, 100);
-    const targetRight = clamp(result.motorCommand.rightSpeed * this.settings.rightEfficiency + jitter(), -100, 100);
+    // 手动介入是直接电机命令：不经过效率差、抖动、加减速度等仿真模型。
+    const targetLeft = manualCommand ? manualCommand.leftSpeed : clamp(result.motorCommand.leftSpeed * this.settings.leftEfficiency + jitter(), -100, 100);
+    const targetRight = manualCommand ? manualCommand.rightSpeed : clamp(result.motorCommand.rightSpeed * this.settings.rightEfficiency + jitter(), -100, 100);
     // 加速度限幅：提速与刹车分别受限；反转时必须先减至 0，再向反方向加速。
     const approachSpeed = (actual: number, target: number) => {
       if (actual !== 0 && target !== 0 && Math.sign(actual) !== Math.sign(target)) {
@@ -55,8 +57,8 @@ export class SimulationEngine {
       const rate = Math.abs(target) > Math.abs(actual) ? this.settings.motorAcceleration : this.settings.motorDeceleration;
       return actual + clamp(target - actual, -rate * dt, rate * dt);
     };
-    const left = approachSpeed(s.actualLeft, targetLeft);
-    const right = approachSpeed(s.actualRight, targetRight);
+    const left = manualCommand ? targetLeft : approachSpeed(s.actualLeft, targetLeft);
+    const right = manualCommand ? targetRight : approachSpeed(s.actualRight, targetRight);
     const average = (left + right) / 2;
     const distance = average * .11;
     /*
